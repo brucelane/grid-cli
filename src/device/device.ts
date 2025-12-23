@@ -115,11 +115,22 @@ export class GridDevice {
   private handleHeartbeat(message: DecodedMessage): void {
     const sx = message.brc_parameters.SX;
     const sy = message.brc_parameters.SY;
-    const key = `${sx},${sy}`;
 
-    const hwcfg = message.class_parameters.HWCFG as number;
+    // Validate required parameters are numbers
+    const hwcfg = message.class_parameters.HWCFG;
+    if (typeof sx !== "number" || typeof sy !== "number" || typeof hwcfg !== "number") {
+      log.debug("Invalid heartbeat parameters, skipping");
+      return;
+    }
+
+    const key = `${sx},${sy}`;
     const typeId = hwcfg & 0x7f; // Lower 7 bits
     const typeName = MODULE_TYPES[typeId] || `Unknown(${typeId})`;
+
+    // Safely extract firmware version with defaults
+    const vmajor = message.class_parameters.VMAJOR;
+    const vminor = message.class_parameters.VMINOR;
+    const vpatch = message.class_parameters.VPATCH;
 
     const moduleInfo: ModuleInfo = {
       dx: sx,
@@ -127,9 +138,9 @@ export class GridDevice {
       type: typeName,
       typeId,
       firmware: {
-        major: message.class_parameters.VMAJOR as number,
-        minor: message.class_parameters.VMINOR as number,
-        patch: message.class_parameters.VPATCH as number,
+        major: typeof vmajor === "number" ? vmajor : 0,
+        minor: typeof vminor === "number" ? vminor : 0,
+        patch: typeof vpatch === "number" ? vpatch : 0,
       },
       elementCount: this.getElementCount(typeName),
     };
@@ -266,6 +277,12 @@ export class GridDevice {
    */
   private parseActions(script: string): Action[] {
     if (!script || script.trim() === "") {
+      return [];
+    }
+
+    // Prevent ReDoS on large malicious input from device
+    if (script.length > 100000) {
+      log.warn(`Script too large (${script.length} chars), skipping parse`);
       return [];
     }
 

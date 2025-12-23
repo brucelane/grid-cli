@@ -54,6 +54,7 @@ export class ResponseWaiter {
   private reject!: (error: Error) => void;
   private timeoutId: NodeJS.Timeout | null = null;
   private promise: Promise<DecodedMessage>;
+  private settled = false;
 
   constructor(
     private filter: ResponseFilter,
@@ -70,6 +71,8 @@ export class ResponseWaiter {
    */
   start(): Promise<DecodedMessage> {
     this.timeoutId = setTimeout(() => {
+      if (this.settled) return;
+      this.settled = true;
       this.reject(new TimeoutError(`Timeout waiting for response (${this.timeoutMs}ms)`));
     }, this.timeoutMs);
 
@@ -81,7 +84,9 @@ export class ResponseWaiter {
    * Returns true if matched and resolved
    */
   tryMatch(message: DecodedMessage): boolean {
+    if (this.settled) return false;
     if (matchesFilter(message, this.filter)) {
+      this.settled = true;
       if (this.timeoutId) {
         clearTimeout(this.timeoutId);
         this.timeoutId = null;
@@ -96,6 +101,8 @@ export class ResponseWaiter {
    * Cancel waiting
    */
   cancel(): void {
+    if (this.settled) return;
+    this.settled = true;
     if (this.timeoutId) {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;

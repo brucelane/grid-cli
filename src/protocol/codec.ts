@@ -7,9 +7,12 @@ async function getGrid() {
   if (!gridModule) {
     // Suppress debug output during import
     const originalLog = console.log;
-    console.log = () => {};
-    gridModule = await import("@intechstudio/grid-protocol");
-    console.log = originalLog;
+    try {
+      console.log = () => {};
+      gridModule = await import("@intechstudio/grid-protocol");
+    } finally {
+      console.log = originalLog;
+    }
   }
   return gridModule.grid;
 }

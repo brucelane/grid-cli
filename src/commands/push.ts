@@ -80,6 +80,7 @@ export async function pushCommand(inputDir: string, options: PushOptions): Promi
     }
 
     // Check that modules match
+    let pushedCount = 0;
     for (const config of configs) {
       const deviceModule = modules.find(
         (m) => m.dx === config.module.dx && m.dy === config.module.dy
@@ -102,6 +103,11 @@ export async function pushCommand(inputDir: string, options: PushOptions): Promi
 
       log.info(`\nPushing to ${config.module.type} at (${config.module.dx}, ${config.module.dy})...`);
       await device.sendModuleConfig(config);
+      pushedCount++;
+    }
+
+    if (pushedCount === 0) {
+      throw new GridError("No modules were pushed. Check that device modules match configuration.");
     }
 
     // Store to flash unless --no-store
@@ -114,7 +120,7 @@ export async function pushCommand(inputDir: string, options: PushOptions): Promi
     }
 
     log.info("");
-    log.success("Successfully pushed configuration!");
+    log.success(`Successfully pushed configuration to ${pushedCount} module(s)!`);
   } finally {
     // Always disconnect
     if (device) {

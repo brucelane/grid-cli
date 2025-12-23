@@ -85,9 +85,17 @@ export function validateActions(actions: Action[]): void {
  * Parse device action string format into Action objects
  * Format: --[[@short#name]] code --[[@short2]] code2
  */
+// Max script size to prevent ReDoS attacks
+const MAX_SCRIPT_SIZE = 100000;
+
 export function parseDeviceFormat(script: string): Action[] {
   if (!script || script.trim() === "") {
     return [];
+  }
+
+  // Prevent ReDoS on large malicious input
+  if (script.length > MAX_SCRIPT_SIZE) {
+    throw new ValidationError("Script too large", [`Maximum ${MAX_SCRIPT_SIZE} characters allowed`]);
   }
 
   const actions: Action[] = [];

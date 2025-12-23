@@ -16,6 +16,17 @@ import { ConfigError, ValidationError } from "../utils/errors.js";
 import * as log from "../utils/logger.js";
 
 /**
+ * Validate that a path stays within a base directory (prevent path traversal)
+ */
+function assertPathWithinBase(targetPath: string, baseDir: string, description: string): void {
+  const resolvedTarget = path.resolve(targetPath);
+  const resolvedBase = path.resolve(baseDir);
+  if (!resolvedTarget.startsWith(resolvedBase + path.sep) && resolvedTarget !== resolvedBase) {
+    throw new ConfigError(`Path traversal detected in ${description}: ${targetPath}`);
+  }
+}
+
+/**
  * Reverse lookup for event names to types
  */
 const EVENT_NAME_TO_TYPE: Record<string, EventType> = {};
@@ -231,6 +242,7 @@ export async function readConfig(baseDir: string): Promise<ModuleConfig[]> {
 
   for (const moduleEntry of manifest.modules) {
     const moduleDir = path.join(baseDir, moduleEntry.path);
+    assertPathWithinBase(moduleDir, baseDir, "module path");
     const config = await readModuleConfig(moduleDir);
     configs.push(config);
 

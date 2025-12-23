@@ -9,7 +9,12 @@ import * as log from "./utils/logger.js";
 import { GridError } from "./utils/errors.js";
 
 // Initialize protocol module (suppresses debug output)
-await initProtocol();
+try {
+  await initProtocol();
+} catch (error) {
+  log.error("Failed to initialize protocol module:", error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
 
 const program = new Command();
 

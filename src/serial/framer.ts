@@ -65,9 +65,11 @@ export class MessageFramer extends Transform {
   }
 
   _flush(callback: TransformCallback): void {
-    // Handle any remaining data
+    // Discard any incomplete data (no delimiter found)
+    // Pushing incomplete data would cause protocol decode errors
     if (this.buffer.length > 0) {
-      this.push(this.buffer);
+      // Don't push incomplete messages - they would be malformed
+      this.buffer = Buffer.alloc(0);
     }
     callback();
   }
