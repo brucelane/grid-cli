@@ -54,7 +54,7 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    - The init code will NOT run immediately after push
    - **Note**: LCD draw events update immediately without reboot - only init requires reboot
 
-2. **LCD backlight must be set in init**: Call `glsb(255)` in the LCD init (element 13) or system init (element 255) to enable the backlight. Without this, the screen stays dark even if drawing works.
+2. **LCD backlight must be set in init**: Call `lcd_set_backlight(255)` (or short form `glsb(255)`) in the LCD init (element 13) to enable the backlight. Without this, the screen stays dark even if drawing works. The backlight call only works in the LCD element's init event (element 13), not in the system init (element 255).
 
 3. **Override draw event when customizing init**: The default `draw` event expects variables set by the default `init` (`self.f`, `self.v`, `c`, etc.). If you write a custom init, either:
    - Also override the draw event (can be empty: `--[[@cb]]`)
@@ -64,14 +64,11 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    ```lua
    -- grid:event element=13 event=init
    --[[@cb]]
-   glsb(255) self:ldaf(0,0,319,239,{20,20,40}) self:ldt("Hello",100,100,24,{255,255,255}) self:ldsw()
+   lcd_set_backlight(255) self:draw_area_filled(0,0,319,239,{0,0,0}) self:draw_text("Hello",100,100,24,{255,255,255}) self:draw_swap()
 
    -- grid:event element=13 event=draw
    --[[@cb]]
-   
-   -- grid:event element=255 event=init
-   --[[@cb]]
-   glsb(255)
+   -- Your draw code here (or empty to disable default draw)
    ```
 
 4. **Action block types matter**: Default configs use `--[[@cb]]` (Code Block), not `--[[@gpl]]`. Using the wrong block type may prevent events from firing.
@@ -106,6 +103,8 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
 9. **SysEx is broken in firmware**: The `midi_sysex_send()`/`gmss()` function does not work correctly - it packs bytes into regular MIDI messages instead of sending actual SysEx. Use regular MIDI notes or CC messages instead.
 
 10. **Code size limits**: Event code has a maximum size of ~909 bytes. Complex draw events may need to be compacted (shorter variable names, less whitespace).
+
+11. **Clear before push when changing configs**: When pushing a config that only defines page 0, old configs on pages 1-3 may remain and interfere. Use `grid-cli clear` before push, or `grid-cli push --clear` to ensure a clean state.
 
 ## Page File Format
 
@@ -331,10 +330,7 @@ self:draw_swap()
 ```lua
 -- grid:event element=13 event=init
 --[[@cb]]
-glsb(255)
-self.value = 0
-self:draw_area_filled(0, 0, 319, 239, {0, 0, 0})
-self:draw_swap()
+lcd_set_backlight(255) self:draw_area_filled(0,0,319,239,{0,0,0}) self:draw_text("Ready",100,100,24,{255,255,255}) self:draw_swap()
 ```
 
 #### Draw from button event (updating LCD from button press)

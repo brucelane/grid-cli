@@ -108,7 +108,7 @@ local v=self:bva() _G.n[4]=v gms(0,v>0 and 144 or 128,72,v) _G.d=1
 
 -- grid:event element=13 event=init
 --[[@cb]]
-lcd_set_backlight(255) self:draw_area_filled(0,0,319,239,{0,0,0}) self:draw_swap()
+lcd_set_backlight(255) self:draw_area_filled(0,0,319,239,{0,0,0}) self:draw_text("MIDI Display",60,100,32,{255,255,255}) self:draw_swap() _G.d=1
 
 -- grid:event element=13 event=draw
 --[[@cb]]
