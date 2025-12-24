@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import gridProtocol from "@intechstudio/grid-protocol";
 import { parseDeviceFormat, parseLuaFile, validateActions } from "./parser.js";
 import type {
   ModuleConfig,
@@ -243,6 +244,21 @@ function buildElementTypes(moduleFile: ModuleFile): Map<number, string> {
     for (const element of moduleFile.elements) {
       elementTypes.set(element.index, element.type || "button");
     }
+  } else {
+    // Fall back to grid-protocol's element definitions
+    const { grid, ModuleType } = gridProtocol;
+    const moduleType = moduleFile.type as keyof typeof ModuleType;
+    if (moduleType in ModuleType) {
+      const elements = grid.get_module_element_list(ModuleType[moduleType]);
+      elements.forEach((type: string | undefined, index: number) => {
+        if (type !== undefined) {
+          elementTypes.set(index, type);
+        }
+      });
+      log.info(
+        `Using grid-protocol element definitions for ${moduleFile.type} (${elementTypes.size} elements)`,
+      );
+    }
   }
   return elementTypes;
 }
@@ -292,13 +308,16 @@ export async function readConfig(baseDir: string): Promise<ModuleConfig[]> {
       throw error;
     }
 
+    // Support both position array format and dx/dy format
+    const dx = moduleFile.position?.[0] ?? moduleFile.dx ?? 0;
+    const dy = moduleFile.position?.[1] ?? moduleFile.dy ?? 0;
     const moduleInfo: ModuleInfo = {
-      dx: moduleFile.position[0],
-      dy: moduleFile.position[1],
+      dx,
+      dy,
       type: moduleFile.type,
       typeId: moduleFile.typeId,
       firmware: moduleFile.firmware,
-      elementCount: moduleFile.elements.length,
+      elementCount: moduleFile.elements?.length ?? 0,
     };
 
     const elementTypes = buildElementTypes(moduleFile);
@@ -325,10 +344,10 @@ export async function readConfig(baseDir: string): Promise<ModuleConfig[]> {
         );
       }
       if (pageData.position) {
-        const [dx, dy] = pageData.position;
-        if (dx !== moduleFile.position[0] || dy !== moduleFile.position[1]) {
+        const [pageDx, pageDy] = pageData.position;
+        if (pageDx !== dx || pageDy !== dy) {
           throw new ConfigError(
-            `Position mismatch in ${pageFile}: expected ${moduleFile.position[0]},${moduleFile.position[1]}, got ${dx},${dy}`,
+            `Position mismatch in ${pageFile}: expected ${dx},${dy}, got ${pageDx},${pageDy}`,
           );
         }
       }

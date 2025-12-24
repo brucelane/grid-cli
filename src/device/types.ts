@@ -72,8 +72,8 @@ export interface ModuleInfo {
   dx: number;
   dy: number;
   type: string;
-  typeId: number;
-  firmware: {
+  typeId?: number;
+  firmware?: {
     major: number;
     minor: number;
     patch: number;

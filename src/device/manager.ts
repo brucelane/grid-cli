@@ -54,7 +54,7 @@ export class DeviceManager {
       log.success(`Connected! Found ${modules.length} module(s):`);
       for (const module of modules) {
         log.info(
-          `  - ${module.type} at (${module.dx}, ${module.dy}) - firmware ${module.firmware.major}.${module.firmware.minor}.${module.firmware.patch}`
+          `  - ${module.type} at (${module.dx}, ${module.dy})${module.firmware ? ` - firmware ${module.firmware.major}.${module.firmware.minor}.${module.firmware.patch}` : ""}`
         );
       }
     }
