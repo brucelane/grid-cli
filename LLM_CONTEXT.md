@@ -31,13 +31,19 @@ config/
 | EN16 | 16 encoders with push buttons | 16 encoders (0-15) |
 | EF44 | 4 encoders + 4 faders | 4 encoders (0-3), 4 faders (4-7) |
 | TEK2 | 2 large rotary encoders (pressable) | 2 endless elements (0-1) |
-| VSN1L | Vision module (display) | lcd element (0), system element (255) |
+| VSN1L | Vision module with LCD + controls | lcd (0), endless encoder (1), 4 nav buttons (2-5), 8 key buttons (6-13), system (255) |
 
 **Note**: Element indices are 0-based. The system element (255) handles module-wide events like map mode.
 
 ### VSN1L (Vision Module) Details
 
-The VSN1L has a 240x240 pixel color LCD screen. It has a special `lcd` element (index 0) with a `draw` event that fires at ~40fps for screen updates. The screen uses double-buffering - draw to the back buffer, then call `draw_swap()` to display.
+The VSN1L is a feature-rich module with:
+- **240x240 pixel color LCD** (element 0) - lcd element with `draw` event at ~40fps
+- **1 large endless rotary encoder** (element 1) - pressable, with 5-LED arc above for level display
+- **4 navigation buttons** (elements 2-5) - small buttons below the LCD
+- **8 key buttons** (elements 6-13) - with addressable RGB LEDs
+
+The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()` to display.
 
 ## Page File Format
 
