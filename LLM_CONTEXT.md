@@ -30,7 +30,7 @@ config/
 | PBF4 | 4 faders + 4 buttons | 4 faders (0-3), 4 buttons (4-7), system element (255) |
 | EN16 | 16 encoders with push buttons | 16 encoders (0-15) |
 | EF44 | 4 encoders + 4 faders | 4 encoders (0-3), 4 faders (4-7) |
-| TEK2 | 2 endless touch strips | 2 potmeters (0-1) |
+| TEK2 | 2 large rotary encoders (pressable) | 2 endless elements (0-1) |
 | VSN1L | Vision module (display) | lcd element (0), system element (255) |
 
 **Note**: Element indices are 0-based. The system element (255) handles module-wide events like map mode.
@@ -80,6 +80,7 @@ end
 | potmeter/fader | init, potmeter, timer, midirx, mapmode |
 | button | init, button, timer, midirx, mapmode |
 | encoder | init, encoder, button, timer, midirx, mapmode |
+| endless | init, endless, button, timer, midirx, mapmode |
 | lcd | init, draw, timer, midirx, mapmode |
 | system | init, timer, midirx, mapmode |
 
@@ -184,6 +185,22 @@ midi_send(0, 176, 1, self:potmeter_value())
 |----------|-------|-------------|
 | `self:potmeter_min()` | `self:pmi()` | Get/set potmeter minimum |
 | `self:potmeter_max()` | `self:pma()` | Get/set potmeter maximum |
+
+### Endless (TEK2) Functions
+
+The TEK2 module has large rotary encoders with their own API. Use in the `endless` event:
+
+| Function | Short | Description |
+|----------|-------|-------------|
+| `self:endless_value()` | `self:epva()` | Get current value |
+| `self:endless_min()` | `self:epmi()` | Get/set minimum value |
+| `self:endless_max()` | `self:epma()` | Get/set maximum value |
+| `self:endless_mode()` | `self:epmo()` | Get/set mode |
+| `self:endless_velocity()` | `self:epv0()` | Get/set velocity sensitivity |
+| `self:endless_direction()` | `self:epdir()` | Get rotation direction |
+| `self:endless_state()` | `self:epst()` | Get press state |
+| `self:endless_elapsed_time()` | `self:epel()` | Get time since last change |
+| `self:endless_sensitivity()` | `self:epse()` | Get/set rotation sensitivity |
 
 ### Utility
 
