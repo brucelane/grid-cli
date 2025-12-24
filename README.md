@@ -4,65 +4,93 @@ A command-line tool for managing Intech Studio Grid controller configurations.
 
 ## Features
 
-- **Pull**: Download configurations from a connected Grid device as editable LUA files
-- **Push**: Upload LUA configurations back to the device
+- **Pull**: Download configurations from a connected Grid device as editable Lua files
+- **Push**: Upload Lua configurations back to the device
 - **Round-trip fidelity**: Edit configurations in your favorite editor, version control with git
+- **Human-readable format**: Configurations are saved as properly formatted Lua with comments
 
-## Status
+## LLM Integration
 
-**Not yet implemented** - See [docs/PLAN.md](docs/PLAN.md) for the implementation plan.
+**For AI assistants**: See [LLM_CONTEXT.md](LLM_CONTEXT.md) for comprehensive documentation on editing Grid configurations, including module types, Lua API reference, and common patterns.
 
-## Planned Usage
+## Installation
+
+```bash
+npm install
+npm run build
+```
+
+## Usage
 
 ```bash
 # List connected devices
-grid-cli devices
+node dist/cli.js devices
 
 # Download configuration to a directory
-grid-cli pull ./my-config
+node dist/cli.js pull ./my-config
 
-# Upload configuration from a directory
-grid-cli push ./my-config
+# Pull specific pages only
+node dist/cli.js pull ./my-config --pages 0,1
 
-# Pull a single page
-grid-cli pull --page 0 ./page0
+# Upload configuration from a directory  
+node dist/cli.js push ./my-config
+
+# Push specific pages only
+node dist/cli.js push ./my-config --pages 0
+
+# Push without saving to flash (temporary)
+node dist/cli.js push ./my-config --no-store
 ```
 
 ## File Format
 
-Configurations are saved as human-readable LUA files:
+Configurations are saved as human-readable Lua files:
 
 ```
 my-config/
 ├── manifest.json
-├── module-0-0/
+├── 01-po16/
 │   ├── module.json
-│   ├── page-0/
-│   │   ├── element-00-button/
-│   │   │   ├── init.lua
-│   │   │   ├── button.lua
-│   │   │   └── timer.lua
-│   │   └── element-01-encoder/
-│   │       └── ...
-│   └── ...
+│   └── page-0.lua
+├── 02-pbf4/
+│   ├── module.json
+│   ├── page-0.lua
+│   └── page-1.lua
+└── ...
 ```
 
-Each LUA file is formatted for readability:
+Each page file contains event handlers:
 
 ```lua
--- Grid Configuration
--- Element: 0 (button)
--- Event: button
+-- grid: page=0
 
---[[ @action gms "Send Note On" ]]
-local ch = 0
-local note = 60
-local vel = self:button_value() * 127
-grid.midi_send(ch, 144, note, vel)
+-- grid:event element=0 event=potmeter
+--[[@gpl]]
+local num = self:element_index()
+local val = self:potmeter_value()
+led_color(num, 1, val * 2, 0, 0)
+midi_send(0, 176, num, val)
 
---[[ @action led "Update LED" ]]
-grid.led_color(self:element_index(), 1, 255, 0, 0)
+-- ============================================================
+
+-- grid:event element=1 event=button
+--[[@gpl]]
+if self:button_value() > 0 then
+  led_color(self:element_index(), 1, 255, 0, 0)
+end
 ```
+
+## Supported Modules
+
+| Type | Description |
+|------|-------------|
+| PO16 | 16 potentiometers |
+| BU16 | 16 buttons |
+| PBF4 | 4 faders + 4 buttons |
+| EN16 | 16 encoders |
+| EF44 | 4 encoders + 4 faders |
+| TEK2 | 2 endless touch strips |
+| VSN1L | Vision module (display) |
 
 ## Development
 
@@ -78,8 +106,11 @@ npm run build
 
 # Test
 npm test
+
+# Lint
+npm run lint
 ```
 
 ## License
 
-TBD
+MIT
