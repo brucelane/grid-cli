@@ -191,6 +191,20 @@ led_color(num, 1, 255, 0, 0)
 led_color(self, 1, 255, 0, 0)
 ```
 
+**Smooth LED brightness**: For smooth brightness transitions (e.g., LED that follows a pot/fader value), use `glc` to set a fixed color and `glp` to control intensity. Scaling color values directly with `glc` results in only ~4 brightness steps due to internal quantization.
+
+```lua
+-- CORRECT: Smooth brightness control (256 steps)
+local n = self:ind()
+local v = self:pva()  -- 0-16383 for 14-bit pot
+glc(n, 1, 255, 128, 0)  -- Fixed orange color at full brightness
+glp(n, 1, v // 64)       -- Intensity 0-255 from pot value
+
+-- WRONG: Only ~4 brightness steps due to color quantization
+local b = v // 64
+glc(n, 1, b, b // 2, 0)  -- Scaling RGB directly doesn't work well
+```
+
 ### MIDI
 
 | Function | Short | Description |
