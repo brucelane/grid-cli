@@ -2,7 +2,7 @@
 
 -- grid:event element=255 event=init
 --[[@cb]]
-_G.k={0,0,0,0,0,0,0,0} _G.n={0,0,0,0} _G.e=8192 _G.eb=0 _G.d=1
+_G.k={0,0,0,0,0,0,0,0} _G.n={0,0,0,0} _G.e=8192 _G.eb=0 _G.d=1 ele[8]:epva(8192)
 
 -- grid:event element=0 event=button
 --[[@sbc]]
@@ -70,11 +70,11 @@ local v=self:bva() _G.k[8]=v gms(0,v>0 and 144 or 128,67,v) _G.d=1
 
 -- grid:event element=8 event=endless
 --[[@sen]]
-self:epmo(0) self:epv0(64) self:epmi(0) self:epma(127) self:epse(50)
+self:epmo(0) self:epv0(64) self:epmi(0) self:epma(16383) self:epse(20)
 --[[@sglc]]
 self:led_color(-1,{{255,140,0,1}}) self:led_value(-1,-1)
 --[[@cb]]
-local v=self:epva() local v14=v*128 _G.e=v14 gms(0,176,1,v14//128) gms(0,176,33,v14%128) _G.d=1
+local v=self:epva() _G.e=v gms(0,176,1,v//128) gms(0,176,33,v%128) _G.d=1
 
 -- grid:event element=8 event=button
 --[[@sbc]]
