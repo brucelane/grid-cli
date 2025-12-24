@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import gridProtocol from "@intechstudio/grid-protocol";
+import * as gridProtocol from "@intechstudio/grid-protocol";
 import { parseDeviceFormat, parseLuaFile, validateActions } from "./parser.js";
 import type {
   ModuleConfig,
