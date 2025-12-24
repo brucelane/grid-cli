@@ -3,7 +3,7 @@
 -- grid:event element=0 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -20,7 +20,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=1 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -37,7 +37,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=2 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -54,7 +54,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=3 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -71,7 +71,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=4 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -88,7 +88,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=5 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -105,7 +105,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=6 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
@@ -122,7 +122,7 @@ self:midi_send(-1,-1,-1,-1)
 -- grid:event element=7 event=button
 -- action: Button Mode (sbc)
 --[[@sbc]]
-self:button_mode(1) self:button_min(0) self:button_max(127)
+self:button_mode(-2) self:button_min(0) self:button_max(127)
 
 -- ------------------------------------------------------------
 -- action: Simple Color (sglc)
