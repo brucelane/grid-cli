@@ -12,10 +12,28 @@ export function parseLuaFile(content: string): Action[] {
   let codeLines: string[] = [];
 
   for (const line of lines) {
-    // Check for action header: --[[ @action short "name" ]] or --[[ @action short ]]
-    const headerMatch = line.match(/^\s*--\[\[\s*@action\s+(\S+)(?:\s+"([^"]*)")?\s*\]\]\s*$/);
+    // Check for action header: --[[@short#name]] or legacy --[[ @action short "name" ]]
+    const shorthandMatch = line.match(/^\s*--\[\[@([^\]]+)\]\]\s*$/);
+    const headerMatch = line.match(
+      /^\s*--\[\[\s*@action\s+(\S+)(?:\s+"([^"]*)")?\s*\]\]\s*$/,
+    );
 
-    if (headerMatch) {
+    const parsed = (() => {
+      if (shorthandMatch) {
+        const meta = shorthandMatch[1];
+        const parts = meta.split(/#(.*)/, 2);
+        return {
+          short: parts[0],
+          name: parts[1],
+        };
+      }
+      if (headerMatch) {
+        return { short: headerMatch[1], name: headerMatch[2] };
+      }
+      return null;
+    })();
+
+    if (parsed) {
       // Save previous action if any
       if (currentAction) {
         currentAction.code = codeLines.join("\n").trim();
@@ -25,23 +43,24 @@ export function parseLuaFile(content: string): Action[] {
       }
 
       // Start new action
-      currentAction = {
-        short: headerMatch[1],
-        name: headerMatch[2],
-        code: "",
-      };
+      currentAction = { short: parsed.short, name: parsed.name, code: "" };
       codeLines = [];
     } else if (currentAction) {
-      // Skip header comments at the start of file
-      if (!line.startsWith("-- Grid Configuration") &&
-          !line.startsWith("-- Module:") &&
-          !line.startsWith("-- Element:") &&
-          !line.startsWith("-- Event:") &&
-          !line.startsWith("-- Page:") &&
-          !line.match(/^\s*$/)) {
+      const isBlank = /^\s*$/.test(line);
+      const isIgnored =
+        line.startsWith("-- Grid Configuration") ||
+        line.startsWith("-- Module:") ||
+        line.startsWith("-- Element:") ||
+        line.startsWith("-- Event:") ||
+        line.startsWith("-- Page:") ||
+        line.startsWith("-- grid:") ||
+        line.startsWith("-- grid:event") ||
+        line.startsWith("-- action:") ||
+        /^\s*--\s*[-=]{3,}/.test(line);
+
+      if (!isIgnored && !isBlank) {
         codeLines.push(line);
-      } else if (codeLines.length > 0) {
-        // If we've started collecting code, include blank lines
+      } else if (codeLines.length > 0 && isBlank) {
         codeLines.push(line);
       }
     }
@@ -95,7 +114,9 @@ export function parseDeviceFormat(script: string): Action[] {
 
   // Prevent ReDoS on large malicious input
   if (script.length > MAX_SCRIPT_SIZE) {
-    throw new ValidationError("Script too large", [`Maximum ${MAX_SCRIPT_SIZE} characters allowed`]);
+    throw new ValidationError("Script too large", [
+      `Maximum ${MAX_SCRIPT_SIZE} characters allowed`,
+    ]);
   }
 
   const actions: Action[] = [];
@@ -137,9 +158,14 @@ export function toDeviceFormat(actions: Action[]): string {
 
   return actions
     .map((action) => {
-      const meta = action.name ? `${action.short}#${action.name}` : action.short;
+      const meta = action.name
+        ? `${action.short}#${action.name}`
+        : action.short;
       // Compress code to single line for device
-      const code = action.code.replace(/[\n\r]+/g, " ").replace(/\s{2,}/g, " ").trim();
+      const code = action.code
+        .replace(/[\n\r]+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
       return `--[[@${meta}]] ${code}`;
     })
     .join(" ");
