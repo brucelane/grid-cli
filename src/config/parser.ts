@@ -12,8 +12,9 @@ export function parseLuaFile(content: string): Action[] {
   let codeLines: string[] = [];
 
   for (const line of lines) {
-    // Check for action header: --[[@short#name]] or legacy --[[ @action short "name" ]]
-    const shorthandMatch = line.match(/^\s*--\[\[@([^\]]+)\]\]\s*$/);
+    // Check for action header: --[[@short#name]] with optional inline code
+    // Also supports legacy --[[ @action short "name" ]]
+    const shorthandMatch = line.match(/^\s*--\[\[@([^\]]+)\]\]\s*(.*)$/);
     const headerMatch = line.match(
       /^\s*--\[\[\s*@action\s+(\S+)(?:\s+"([^"]*)")?\s*\]\]\s*$/,
     );
@@ -25,10 +26,11 @@ export function parseLuaFile(content: string): Action[] {
         return {
           short: parts[0],
           name: parts[1],
+          inlineCode: shorthandMatch[2] || "",
         };
       }
       if (headerMatch) {
-        return { short: headerMatch[1], name: headerMatch[2] };
+        return { short: headerMatch[1], name: headerMatch[2], inlineCode: "" };
       }
       return null;
     })();
@@ -45,6 +47,10 @@ export function parseLuaFile(content: string): Action[] {
       // Start new action
       currentAction = { short: parsed.short, name: parsed.name, code: "" };
       codeLines = [];
+      // If there's inline code after the header, add it
+      if (parsed.inlineCode.trim()) {
+        codeLines.push(parsed.inlineCode);
+      }
     } else if (currentAction) {
       const isBlank = /^\s*$/.test(line);
       const isIgnored =

@@ -52,6 +52,7 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    - Reboot the device
    - Switch to another page and back
    - The init code will NOT run immediately after push
+   - **Note**: LCD draw events update immediately without reboot - only init requires reboot
 
 2. **LCD backlight must be set in init**: Call `glsb(255)` in the LCD init (element 13) or system init (element 255) to enable the backlight. Without this, the screen stays dark even if drawing works.
 
@@ -75,29 +76,36 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
 
 4. **Action block types matter**: Default configs use `--[[@cb]]` (Code Block), not `--[[@gpl]]`. Using the wrong block type may prevent events from firing.
 
-5. **Button events require setup blocks**: When overriding button events, include the setup blocks:
+5. **Button events require setup blocks**: When overriding button events, include the setup blocks. The `--[[@sglc]]` block is critical for proper LED behavior:
    ```lua
    -- grid:event element=0 event=button
    --[[@sbc]]
    self:bmo(0) self:bmi(0) self:bma(127)
    --[[@sglc]]
-   self:glc(-1,{{-1,-1,-1,1}}) self:glp(-1,-1)
+   self:led_color(-1,{{-1,-1,-1,1}}) self:led_value(-1,-1)
    --[[@cb]]
    -- your code here
    ```
 
-6. **Endless events require setup blocks**: 
+6. **Endless events require setup blocks**. You can customize the arc LED color in the sglc block:
    ```lua
    -- grid:event element=8 event=endless
    --[[@sen]]
    self:epmo(0) self:epv0(64) self:epmi(0) self:epma(127) self:epse(50)
    --[[@sglc]]
-   self:glc(-1,{{-1,-1,-1,1}}) self:glp(-1,-1)
+   self:led_color(-1,{{255,140,0,1}}) self:led_value(-1,-1)
    --[[@cb]]
    -- your code here
    ```
+   The `{{r,g,b,1}}` format sets the arc LED color (e.g., `{{255,140,0,1}}` for orange).
 
 7. **Cross-element references**: Use `ele[N]` or `element[N]` to access other elements' state.
+
+8. **VSN1L LED addressing**: Do NOT use `glc(num, ...)` with element indices on VSN1L - the endless arc LEDs share indices with key buttons (6, 7, 8 overlap). Instead, use the `--[[@sglc]]` block with `self:led_color(-1,{{-1,-1,-1,1}})` to let firmware handle LED behavior automatically.
+
+9. **SysEx is broken in firmware**: The `midi_sysex_send()`/`gmss()` function does not work correctly - it packs bytes into regular MIDI messages instead of sending actual SysEx. Use regular MIDI notes or CC messages instead.
+
+10. **Code size limits**: Event code has a maximum size of ~909 bytes. Complex draw events may need to be compacted (shorter variable names, less whitespace).
 
 ## Page File Format
 
@@ -373,15 +381,13 @@ Each code block must start with an action header. Common types:
 
 ### Action block format in page files
 
-Action headers must be on their own line:
+Action headers can have code on the same line or following lines:
 ```lua
--- CORRECT (header on own line):
+-- Both formats work:
 --[[@sbc]]
 self:bmo(0) self:bmi(0) self:bma(127)
---[[@cb]]
--- your code here
 
--- WRONG (inline code - will be ignored by parser):
+-- Inline format also works:
 --[[@sbc]] self:bmo(0) self:bmi(0) self:bma(127)
 ```
 
