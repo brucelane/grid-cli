@@ -649,9 +649,15 @@ export class GridDevice {
 
   /**
    * Send complete configuration for a module
+   * @param config The module configuration to send
+   * @param targetModule Optional device module to send to (for type-based matching)
    */
-  async sendModuleConfig(config: ModuleConfig): Promise<void> {
-    const module = config.module;
+  async sendModuleConfig(
+    config: ModuleConfig,
+    targetModule?: ModuleInfo,
+  ): Promise<void> {
+    // Use target module position if provided, otherwise use config position
+    const module = targetModule ?? config.module;
     let activePage: number | null = null;
     const totalEvents = config.pages.reduce(
       (sum, p) => sum + p.events.length,

@@ -16,6 +16,7 @@ export interface PushOptions {
   noStore?: boolean;
   pages?: string;
   skipPages?: string;
+  byPosition?: boolean;
 }
 
 /**
@@ -125,31 +126,77 @@ export async function pushCommand(
 
     // Check that modules match
     let pushedCount = 0;
-    for (const config of filteredConfigs) {
-      const deviceModule = modules.find(
-        (m) => m.dx === config.module.dx && m.dy === config.module.dy,
-      );
 
-      if (!deviceModule) {
-        log.warn(
-          `Module ${config.module.type} at (${config.module.dx}, ${config.module.dy}) not found on device. Skipping.`,
+    if (options.byPosition) {
+      // Match by position (original behavior)
+      for (const config of filteredConfigs) {
+        const deviceModule = modules.find(
+          (m) => m.dx === config.module.dx && m.dy === config.module.dy,
         );
-        continue;
+
+        if (!deviceModule) {
+          log.warn(
+            `Module ${config.module.type} at (${config.module.dx}, ${config.module.dy}) not found on device. Skipping.`,
+          );
+          continue;
+        }
+
+        if (deviceModule.type !== config.module.type) {
+          log.warn(
+            `Module type mismatch at (${config.module.dx}, ${config.module.dy}): ` +
+              `config has ${config.module.type}, device has ${deviceModule.type}. Skipping.`,
+          );
+          continue;
+        }
+
+        log.info(
+          `\nPushing to ${config.module.type} at (${deviceModule.dx}, ${deviceModule.dy})...`,
+        );
+        await device.sendModuleConfig(config, deviceModule);
+        pushedCount++;
+      }
+    } else {
+      // Match by type (default) - find device module with matching type
+      // Check for duplicate types in config
+      const configTypes = filteredConfigs.map((c) => c.module.type);
+      const duplicateConfigTypes = configTypes.filter(
+        (t, i) => configTypes.indexOf(t) !== i,
+      );
+      if (duplicateConfigTypes.length > 0) {
+        throw new GridError(
+          `Multiple modules of same type in config: ${[...new Set(duplicateConfigTypes)].join(", ")}. ` +
+            `Use --by-position for configs with duplicate module types.`,
+        );
       }
 
-      if (deviceModule.type !== config.module.type) {
+      // Check for duplicate types on device
+      const deviceTypes = modules.map((m) => m.type);
+      const duplicateDeviceTypes = deviceTypes.filter(
+        (t, i) => deviceTypes.indexOf(t) !== i,
+      );
+      if (duplicateDeviceTypes.length > 0) {
         log.warn(
-          `Module type mismatch at (${config.module.dx}, ${config.module.dy}): ` +
-            `config has ${config.module.type}, device has ${deviceModule.type}. Skipping.`,
+          `Multiple modules of same type on device: ${[...new Set(duplicateDeviceTypes)].join(", ")}. ` +
+            `Consider using --by-position for precise control.`,
         );
-        continue;
       }
 
-      log.info(
-        `\nPushing to ${config.module.type} at (${config.module.dx}, ${config.module.dy})...`,
-      );
-      await device.sendModuleConfig(config);
-      pushedCount++;
+      for (const config of filteredConfigs) {
+        const deviceModule = modules.find((m) => m.type === config.module.type);
+
+        if (!deviceModule) {
+          log.warn(
+            `Module type ${config.module.type} not found on device. Skipping.`,
+          );
+          continue;
+        }
+
+        log.info(
+          `\nPushing to ${config.module.type} at (${deviceModule.dx}, ${deviceModule.dy})...`,
+        );
+        await device.sendModuleConfig(config, deviceModule);
+        pushedCount++;
+      }
     }
 
     if (pushedCount === 0) {

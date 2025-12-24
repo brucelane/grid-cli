@@ -96,6 +96,10 @@ program
   .option("--no-store", "Don't save to flash (changes lost on reset)")
   .option("--pages <list>", "Only push specific pages (e.g. 0,2-3)")
   .option("--skip-pages <list>", "Skip specific pages (e.g. 1,3)")
+  .option(
+    "--by-position",
+    "Match modules by position instead of type (for duplicate module types)",
+  )
   .action(async (directory: string, options: PushOptions) => {
     try {
       await pushCommand(directory, options);
