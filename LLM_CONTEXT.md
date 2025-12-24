@@ -31,19 +31,73 @@ config/
 | EN16 | 16 encoders with push buttons | 16 encoders (0-15) |
 | EF44 | 4 encoders + 4 faders | 4 encoders (0-3), 4 faders (4-7) |
 | TEK2 | 2 large rotary encoders (pressable) | 2 endless elements (0-1) |
-| VSN1L | Vision module with LCD + controls | lcd (0), endless encoder (1), 4 nav buttons (2-5), 8 key buttons (6-13), system (255) |
+| VSN1L | Vision module with LCD + controls | 8 key buttons (0-7), endless encoder (8), 4 nav buttons (9-12), lcd (13), system (255) |
 
 **Note**: Element indices are 0-based. The system element (255) handles module-wide events like map mode.
 
 ### VSN1L (Vision Module) Details
 
 The VSN1L is a feature-rich module with:
-- **240x240 pixel color LCD** (element 0) - lcd element with `draw` event at ~40fps
-- **1 large endless rotary encoder** (element 1) - pressable, with 5-LED arc above for level display
-- **4 navigation buttons** (elements 2-5) - small buttons below the LCD
-- **8 key buttons** (elements 6-13) - with addressable RGB LEDs
+- **8 key buttons** (elements 0-7) - with addressable RGB LEDs
+- **1 large endless rotary encoder** (element 8) - pressable, with 5-LED arc above for level display
+- **4 navigation buttons** (elements 9-12) - small buttons below the LCD
+- **320x240 pixel color LCD** (element 13) - lcd element with `draw` event
+- **System element** (255) - handles page init, mapmode, timer, midirx
 
 The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()` to display.
+
+### VSN1L Known Issues and Solutions
+
+1. **Init events only run on page load, not on config push.** After pushing a config, you must either:
+   - Reboot the device
+   - Switch to another page and back
+   - The init code will NOT run immediately after push
+
+2. **LCD backlight must be set in init**: Call `glsb(255)` in the LCD init (element 13) or system init (element 255) to enable the backlight. Without this, the screen stays dark even if drawing works.
+
+3. **Override draw event when customizing init**: The default `draw` event expects variables set by the default `init` (`self.f`, `self.v`, `c`, etc.). If you write a custom init, either:
+   - Also override the draw event (can be empty: `--[[@cb]]`)
+   - Set all the variables the default draw expects
+   
+   Example of a complete LCD setup:
+   ```lua
+   -- grid:event element=13 event=init
+   --[[@cb]]
+   glsb(255) self:ldaf(0,0,319,239,{20,20,40}) self:ldt("Hello",100,100,24,{255,255,255}) self:ldsw()
+
+   -- grid:event element=13 event=draw
+   --[[@cb]]
+   
+   -- grid:event element=255 event=init
+   --[[@cb]]
+   glsb(255)
+   ```
+
+4. **Action block types matter**: Default configs use `--[[@cb]]` (Code Block), not `--[[@gpl]]`. Using the wrong block type may prevent events from firing.
+
+5. **Button events require setup blocks**: When overriding button events, include the setup blocks:
+   ```lua
+   -- grid:event element=0 event=button
+   --[[@sbc]]
+   self:bmo(0) self:bmi(0) self:bma(127)
+   --[[@sglc]]
+   self:glc(-1,{{-1,-1,-1,1}}) self:glp(-1,-1)
+   --[[@cb]]
+   -- your code here
+   ```
+
+6. **Endless events require setup blocks**: 
+   ```lua
+   -- grid:event element=8 event=endless
+   --[[@sen]]
+   self:epmo(0) self:epv0(64) self:epmi(0) self:epma(127) self:epse(50)
+   --[[@sglc]]
+   self:glc(-1,{{-1,-1,-1,1}}) self:glp(-1,-1)
+   --[[@cb]]
+   -- your code here
+   ```
+
+7. **Cross-element references**: Use `ele[N]` or `element[N]` to access other elements' state.
 
 ## Page File Format
 
@@ -219,7 +273,7 @@ The TEK2 module has large rotary encoders with their own API. Use in the `endles
 
 ## VSN1L Display API
 
-The VSN1L Vision module has a 240x240 pixel color LCD. Drawing uses double-buffering: draw to the back buffer, then call `draw_swap()` to display.
+The VSN1L Vision module has a 320x240 pixel color LCD. Drawing uses double-buffering: draw to the back buffer, then call `draw_swap()` to display.
 
 ### Display Drawing Functions
 
@@ -256,50 +310,50 @@ These can be called from any element, specifying screen_index (usually 0):
 
 ### VSN1L Display Examples
 
-#### Basic draw event (element 0)
+#### Basic draw event (element 13)
 ```lua
--- grid:event element=0 event=draw
---[[@gpl]]
-self:draw_rectangle_filled(0, 0, 240, 240, {0, 0, 0})
-self:draw_text("Hello", 50, 100, 24, {255, 255, 255})
+-- grid:event element=13 event=draw
+--[[@cb]]
+self:draw_rectangle_filled(0, 0, 320, 240, {0, 0, 0})
+self:draw_text("Hello", 100, 100, 24, {255, 255, 255})
 self:draw_swap()
 ```
 
-#### Draw from another module's event
+#### LCD init with backlight
 ```lua
--- grid:event element=0 event=potmeter
---[[@gpl]]
-local val = self:potmeter_value()
-gui_draw_rectangle_filled(0, 0, 0, 240, 240, {0, 0, 0})
-gui_draw_rectangle_filled(0, 0, 200, math.floor(val * 240 / 127), 40, {0, 255, 0})
-gui_draw_text(0, tostring(val), 100, 100, 32, {255, 255, 255})
-gui_draw_swap(0)
+-- grid:event element=13 event=init
+--[[@cb]]
+glsb(255)
+self.value = 0
+self:draw_area_filled(0, 0, 319, 239, {0, 0, 0})
+self:draw_swap()
 ```
 
-#### Animated display with timer
+#### Draw from button event (updating LCD from button press)
 ```lua
--- grid:event element=0 event=init
---[[@gpl]]
-self.x = 0
-self:timer_start(50)
-
--- grid:event element=0 event=timer
---[[@gpl]]
-self.x = (self.x + 2) % 240
-self:draw_rectangle_filled(0, 0, 240, 240, {0, 0, 32})
-self:draw_rectangle_filled(self.x, 100, self.x + 40, 140, {255, 128, 0})
-self:draw_swap()
-self:timer_start(50)
+-- grid:event element=0 event=button
+--[[@sbc]]
+self:bmo(0) self:bmi(0) self:bma(127)
+--[[@cb]]
+if self:bva() > 0 then
+  local lcd = ele[13]
+  lcd.pressed = 1
+  glc(0, 1, 0, 255, 0)
+else
+  ele[13].pressed = 0
+  glc(0, 1, 0, 0, 0)
+end
 ```
 
 ### VSN1L Notes
 
-- Screen resolution: 240x240 pixels
+- Screen resolution: 320x240 pixels (width x height)
 - Coordinate origin (0,0) is top-left
-- The `draw` event fires at ~40fps when the module is active
+- The `draw` event fires periodically when triggered
 - Always call `draw_swap()` after drawing to display changes
 - Use `draw_text_fast()` for better performance with frequently updating text
 - Colors are 8-bit per channel (0-255 for r, g, b)
+- LCD element is 13, not 0 - use `ele[13]` to reference from other elements
 
 ## Action Block Types
 
@@ -307,17 +361,29 @@ Each code block must start with an action header. Common types:
 
 | Short | Name | Purpose |
 |-------|------|---------|
-| `gpl` | Locals | General purpose code block |
-| `cb` | Code Block | Generic code |
-| `glc` | LED Color | LED control action |
+| `cb` | Code Block | Generic code block (preferred for custom code) |
+| `gpl` | Locals | General purpose code block (alternative) |
+| `sbc` | Button Config | Button setup: mode, min, max |
+| `sen` | Endless Config | Endless setup: mode, velocity, min, max, sensitivity |
+| `sglc` | LED Config | LED color/phase setup |
 | `gms` | MIDI Send | MIDI output action |
-| `pls` | Pot Locals | Potmeter-specific locals |
-| `pma` | Pot Mode A | Potmeter mode configuration |
-| `if` | If | Conditional start |
-| `el` | Else | Else branch |
-| `en` | End | End conditional |
+| `l` | Locals | Local variable declarations |
 
-For most custom code, use `--[[@gpl]]` (general purpose locals).
+**Important**: Default configs use `--[[@cb]]`. When overriding button/endless events, include the setup blocks (`--[[@sbc]]`, `--[[@sen]]`, `--[[@sglc]]`) before your custom code block.
+
+### Action block format in page files
+
+Action headers must be on their own line:
+```lua
+-- CORRECT (header on own line):
+--[[@sbc]]
+self:bmo(0) self:bmi(0) self:bma(127)
+--[[@cb]]
+-- your code here
+
+-- WRONG (inline code - will be ignored by parser):
+--[[@sbc]] self:bmo(0) self:bmi(0) self:bma(127)
+```
 
 ## Common Patterns
 
