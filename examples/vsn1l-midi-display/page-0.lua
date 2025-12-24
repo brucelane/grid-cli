@@ -2,7 +2,7 @@
 
 -- grid:event element=255 event=init
 --[[@cb]]
-glsb(255) _G.k={0,0,0,0,0,0,0,0} _G.n={0,0,0,0} _G.e=8192 _G.eb=0 _G.d=1
+_G.k={0,0,0,0,0,0,0,0} _G.n={0,0,0,0} _G.e=8192 _G.eb=0 _G.d=1
 
 -- grid:event element=0 event=button
 --[[@sbc]]
@@ -108,7 +108,7 @@ local v=self:bva() _G.n[4]=v gms(0,v>0 and 144 or 128,72,v) _G.d=1
 
 -- grid:event element=13 event=init
 --[[@cb]]
-glsb(255) self:ldaf(0,0,319,239,{0,0,0}) self:ldsw()
+lcd_set_backlight(255) self:draw_area_filled(0,0,319,239,{0,0,0}) self:draw_swap()
 
 -- grid:event element=13 event=draw
 --[[@cb]]
