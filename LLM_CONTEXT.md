@@ -54,9 +54,11 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    - The init code will NOT run immediately after push
    - **Note**: LCD draw events update immediately without reboot - only init requires reboot
 
-2. **LCD backlight must be set in init**: Call `lcd_set_backlight(255)` (or short form `glsb(255)`) in the LCD init (element 13) to enable the backlight. Without this, the screen stays dark even if drawing works. The backlight call only works in the LCD element's init event (element 13), not in the system init (element 255).
+2. **LCD more reliable when USB is in another module**: The VSN1L LCD initializes more reliably when USB is connected to a different module in the chain (e.g., PBF4). This may be a power or timing issue during boot when VSN1L is the USB host.
 
-3. **Override draw event when customizing init**: The default `draw` event expects variables set by the default `init` (`self.f`, `self.v`, `c`, etc.). If you write a custom init, either:
+3. **LCD backlight must be set in init**: Call `lcd_set_backlight(255)` (or short form `glsb(255)`) in the LCD init (element 13) to enable the backlight. Without this, the screen stays dark even if drawing works. The backlight call only works in the LCD element's init event (element 13), not in the system init (element 255).
+
+4. **Override draw event when customizing init**: The default `draw` event expects variables set by the default `init` (`self.f`, `self.v`, `c`, etc.). If you write a custom init, either:
    - Also override the draw event (can be empty: `--[[@cb]]`)
    - Set all the variables the default draw expects
    
@@ -71,9 +73,9 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    -- Your draw code here (or empty to disable default draw)
    ```
 
-4. **Action block types matter**: Default configs use `--[[@cb]]` (Code Block), not `--[[@gpl]]`. Using the wrong block type may prevent events from firing.
+5. **Action block types matter**: Default configs use `--[[@cb]]` (Code Block), not `--[[@gpl]]`. Using the wrong block type may prevent events from firing.
 
-5. **Button events require setup blocks**: When overriding button events, include the setup blocks. The `--[[@sglc]]` block is critical for proper LED behavior:
+6. **Button events require setup blocks**: When overriding button events, include the setup blocks. The `--[[@sglc]]` block is critical for proper LED behavior:
    ```lua
    -- grid:event element=0 event=button
    --[[@sbc]]
@@ -84,7 +86,7 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    -- your code here
    ```
 
-6. **Endless events require setup blocks**. You can customize the arc LED color in the sglc block:
+7. **Endless events require setup blocks**. You can customize the arc LED color in the sglc block:
    ```lua
    -- grid:event element=8 event=endless
    --[[@sen]]
@@ -96,15 +98,15 @@ The LCD uses double-buffering - draw to the back buffer, then call `draw_swap()`
    ```
    The `{{r,g,b,1}}` format sets the arc LED color (e.g., `{{255,140,0,1}}` for orange).
 
-7. **Cross-element references**: Use `ele[N]` or `element[N]` to access other elements' state.
+8. **Cross-element references**: Use `ele[N]` or `element[N]` to access other elements' state.
 
-8. **VSN1L LED addressing**: Do NOT use `glc(num, ...)` with element indices on VSN1L - the endless arc LEDs share indices with key buttons (6, 7, 8 overlap). Instead, use the `--[[@sglc]]` block with `self:led_color(-1,{{-1,-1,-1,1}})` to let firmware handle LED behavior automatically.
+9. **VSN1L LED addressing**: Do NOT use `glc(num, ...)` with element indices on VSN1L - the endless arc LEDs share indices with key buttons (6, 7, 8 overlap). Instead, use the `--[[@sglc]]` block with `self:led_color(-1,{{-1,-1,-1,1}})` to let firmware handle LED behavior automatically.
 
-9. **SysEx is broken in firmware**: The `midi_sysex_send()`/`gmss()` function does not work correctly - it packs bytes into regular MIDI messages instead of sending actual SysEx. Use regular MIDI notes or CC messages instead.
+10. **SysEx is broken in firmware**: The `midi_sysex_send()`/`gmss()` function does not work correctly - it packs bytes into regular MIDI messages instead of sending actual SysEx. Use regular MIDI notes or CC messages instead.
 
-10. **Code size limits**: Event code has a maximum size of ~909 bytes. Complex draw events may need to be compacted (shorter variable names, less whitespace).
+11. **Code size limits**: Event code has a maximum size of ~909 bytes. Complex draw events may need to be compacted (shorter variable names, less whitespace).
 
-11. **Clear before push when changing configs**: When pushing a config that only defines page 0, old configs on pages 1-3 may remain and interfere. Use `grid-cli clear` before push, or `grid-cli push --clear` to ensure a clean state.
+12. **Clear before push when changing configs**: When pushing a config that only defines page 0, old configs on pages 1-3 may remain and interfere. Use `grid-cli clear` before push, or `grid-cli push --clear` to ensure a clean state.
 
 ## Page File Format
 
